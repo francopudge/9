@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9hari</title>
+       <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --surface: #1a1a1a;
+            --primary-red: #c0392b;
+            --glow-red: #ff3019;
+            --text-gray: #bdc3c7;
+            --cell-empty: #2c0000;
+        }
+
+        /* LOADING SCREEN STYLES */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-logo {
+            width: 200px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-text {
+            color: var(--primary-red);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* EXISTING STYLES */
+        body, html {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-dark);
+            color: var(--text-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .game-wrapper {
+            width: 95%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px 0;
+        }
+
+        .menu-container {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 4px;
+            border: 1px solid var(--primary-red);
+            box-shadow: 0 0 20px rgba(192, 57, 43, 0.2);
+            text-align: center;
+        }
+
+        .menu-logo {
+            width: 100%;
+            max-width: 280px;
+            margin-bottom: 25px;
+            object-fit: contain;
+        }
+
+        .rule-img {
+            width: 250px;
+            border: 2px solid var(--primary-red);
+            margin-bottom: 20px;
+        }
+
+        .menu-btn {
+            background-color: transparent;
+            color: var(--primary-red);
+            border: 1px solid var(--primary-red);
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn:hover {
+            background: var(--primary-red);
+            color: white;
+            box-shadow: 0 0 15px var(--glow-red);
+        }
+
+        /* AUDIO CONTROL */
+        .audio-ctrl {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--primary-red);
+            color: var(--primary-red);
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            z-index: 100;
+        }
+
+        .status-panel {
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 5px solid var(--primary-red);
+            position: relative;
+        }
+
+        .stat-label { 
+            font-size: 0.75rem; 
+            color: var(--primary-red); 
+            display: block; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .mental-track {
+            display: flex;
+            justify-content: space-between;
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            gap: 5px;
+        }
+
+        .mental-cell {
+            flex: 1;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--cell-empty);
+            color: #444;
+            font-size: 0.7rem;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .mental-cell.active::after {
+            content: '';
+            position: absolute;
+            width: 130%;
+            height: 130%;
+            background-image: url('karakter.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            top: -12px;
+            z-index: 10;
+            filter: drop-shadow(0 0 5px var(--glow-red));
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-4px); }
+        }
+
+        .mental-cell.dead { background: #5a0000; color: white; }
+
+        .game-container {
+            background: var(--surface);
+            padding: 20px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        #dice-result { 
+            font-size: 4.5rem; 
+            margin: 15px 0; 
+            color: var(--primary-red);
+            text-shadow: 0 0 10px var(--glow-red);
+        }
+
+        .day-value { font-weight: bold; color: white; font-size: 1.5rem; text-shadow: 0 0 5px var(--primary-red);}
+
+        .log-box {
+            background: #000;
+            color: #888;
+            padding: 15px;
+            border: 1px solid #222;
+            height: 120px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        .log-entry { border-left: 2px solid #444; padding-left: 10px; margin-bottom: 8px; }
+        .loss { color: var(--glow-red); font-weight: bold; }
+        .safe { color: #55ff55; }
+        .hidden { display: none !important; }
+
+        .action-btn {
+            background-color: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #7b1d12;
+        }
+
+        .action-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #7b1d12;
+        }
+
+        .exit-btn {
+            margin-top: 20px;
+            background: transparent;
+            color: #555;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            text-decoration: underline;
+        }
+
+        /* Pastikan body mengisi seluruh layar dan konten di tengah */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: var(--bg-dark);
+    color: var(--text-gray);
+    display: flex;
+    flex-direction: column; /* Mengatur alur vertikal untuk header/content/footer */
+    overflow-x: hidden;
+}
+
+/* CONTAINER UTAMA (Tengah Layar) */
+.game-wrapper {
+    flex: 1; /* Mengambil sisa ruang yang ada */
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto; /* Menjaga di tengah secara horizontal */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Menjaga konten di tengah secara vertikal */
+    align-items: center;
+    padding: 80px 15px; /* Memberi ruang agar tidak tertutup header/footer */
+    box-sizing: border-box;
+}
+
+/* HEADER STICKY */
+.sticky-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(26, 26, 26, 0.95);
+    border-bottom: 2px solid var(--primary-red);
+    padding: 10px 0;
+    z-index: 1000;
+    text-align: center;
+    backdrop-filter: blur(5px);
+}
+
+/* FOOTER STICKY */
+.sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(26, 26, 26, 0.95);
+    border-top: 2px solid var(--primary-red);
+    padding: 10px 0;
+    z-index: 1000;
+    text-align: center;
+    font-size: 0.7rem;
+    backdrop-filter: blur(5px);
+}
+
+/* Penyesuaian Responsif HP */
+@media (max-width: 480px) {
+    .menu-container {
+        width: 90%;
+        padding: 20px;
+    }
+    #dice-result {
+        font-size: 3.5rem;
+    }
+    .mental-track {
+        gap: 2px;
+        padding: 5px;
+    }
+}
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <img src="logo.png" class="loading-logo" alt="Loading...">
+        <div class="loading-text">Loading...</div>
+    </div>
+
+    <audio id="bg-music" loop>
+        <source src="Shiki OP 1 [Blu-Ray].mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="game-wrapper">
+        
+        <div id="main-menu" class="menu-container">
+    <img src="logo.png" class="menu-logo" alt="LOGO">
+    
+    <div style="margin-bottom: 20px; font-size: 0.8rem; color: var(--text-gray); border-top: 1px solid #333; padding-top: 10px;">
+        <span style="margin-right: 15px;">👤 1 PEMAIN (13+)</span>
+        <span>⏱️ 5-10 MENIT</span>
+    </div>
+
+    <button class="menu-btn" onclick="startGame()">Mulai Bertahan</button>
+    <button class="menu-btn" onclick="showScreen('rulebook-screen')">Instruksi</button>
+    
+    <button id="btnGame" class="menu-btn">KGAME</button>
+</div>
+        <div id="rulebook-screen" class="menu-container hidden">
+            <img src="rulebook.png" alt="Rulebook" class="rule-img">
+            <p style="font-size: 0.85rem; line-height: 1.6; margin-bottom: 20px;">
+                9 hari di kegelapan.<br>
+                Setiap angka dadu di atas 3 akan mengikis kewarasanmu.<br>
+                <span style="color: var(--primary-red)">Jangan biarkan track mencapai angka 0.</span>
+            </p>
+            <button class="menu-btn" onclick="showScreen('main-menu')">Kembali</button>
+        </div>
+
+        <div id="game-screen" class="hidden" style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="status-panel">
+                <button id="music-btn" class="audio-ctrl" onclick="toggleMusic()">MUSIC: OFF</button>
+                <span class="stat-label">Mental Stability</span>
+                <div id="mental-track" class="mental-track"></div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <span class="stat-label">HARI KE-</span>
+                    <span id="day-display" class="day-value">1 / 9</span>
+                </div>
+            </div>
+
+            <div class="game-container">
+                <div id="dice-result">🎲</div>
+                <button id="roll-btn" class="action-btn" onclick="playTurn()">Kocok Takdir</button>
+                <button id="reset-btn" class="menu-btn" onclick="resetGame()" style="display:none; margin-top: 15px;">Coba Lagi</button>
+                <button class="exit-btn" onclick="exitToMenu()">Menyerah dan Keluar</button>
+            </div>
+
+            <div class="log-box" id="log-container">
+                <div class="log-entry">Kegelapan menunggumu...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mental = 10;
+        let day = 1;
+        const maxDays = 9;
+
+        const trackContainer = document.getElementById('mental-track');
+        const dayDisp = document.getElementById('day-display');
+        const logContainer = document.getElementById('log-container');
+        const rollBtn = document.getElementById('roll-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const diceDisp = document.getElementById('dice-result');
+        const bgMusic = document.getElementById('bg-music');
+        const musicBtn = document.getElementById('music-btn');
+
+        // LOADING LOGIC
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }, 2000); // Tampil selama 2 detik
+        });
+
+        // MUSIC LOGIC
+        function toggleMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play();
+                musicBtn.innerText = "MUSIC: ON";
+                musicBtn.style.color = "#55ff55";
+            } else {
+                bgMusic.pause();
+                musicBtn.innerText = "MUSIC: OFF";
+                musicBtn.style.color = "var(--primary-red)";
+            }
+        }
+
+       function startGame() {
+    showScreen('game-screen');
+    // Musik tidak otomatis nyala
+}
+
+        function createTrack() {
+            trackContainer.innerHTML = '';
+            for (let i = 0; i <= 10; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'mental-cell';
+                cell.id = `cell-${i}`;
+                cell.innerText = i;
+                if (i === 0) cell.classList.add('dead');
+                trackContainer.appendChild(cell);
+            }
+            updateTrackUI();
+        }
+
+        function updateTrackUI() {
+            document.querySelectorAll('.mental-cell').forEach(cell => cell.classList.remove('active'));
+            const activeCell = document.getElementById(`cell-${mental}`);
+            if (activeCell) activeCell.classList.add('active');
+        }
+
+        function showScreen(screenId) {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('rulebook-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+            if(screenId === 'game-screen') createTrack();
+        }
+
+        function exitToMenu() {
+            if(confirm("Keluar? Progress akan hilang.")) {
+                resetGame();
+                showScreen('main-menu');
+            }
+        }
+
+        function playTurn() {
+            if (day > maxDays || mental <= 0) return;
+
+            diceDisp.style.opacity = "0.3";
+            rollBtn.disabled = true;
+            
+            setTimeout(() => {
+                diceDisp.style.opacity = "1";
+                rollBtn.disabled = false;
+                
+                const roll = Math.floor(Math.random() * 6) + 1;
+                let effect = 0;
+                let message = "";
+                let styleClass = "safe";
+
+                if (roll <= 3) {
+                    message = `Dadu ${roll}: Kamu masih bertahan.`;
+                } else {
+                    effect = -(roll - 3); 
+                    message = `Dadu ${roll}: Kewarasan berkurang ${Math.abs(effect)}!`;
+                    styleClass = "loss";
+                }
+
+                mental += effect;
+                if (mental < 0) mental = 0;
+                
+                diceDisp.innerText = getDiceEmoji(roll);
+                updateTrackUI();
+                addLog(`Hari ${day}: ${message}`, styleClass);
+
+                if (mental <= 0) {
+                    endGame(false);
+                } else if (day === maxDays) {
+                    endGame(true);
+                } else {
+                    day++;
+                    dayDisp.innerText = `${day} / ${maxDays}`;
+                }
+            }, 400);
+        }
+
+        function getDiceEmoji(n) {
+            return ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][n-1];
+        }
+
+        function addLog(msg, className) {
+            const div = document.createElement('div');
+            div.className = 'log-entry ' + className;
+            div.innerText = msg;
+            logContainer.prepend(div);
+        }
+
+        function endGame(isWin) {
+            rollBtn.style.display = "none";
+            resetBtn.style.display = "block";
+            
+            if (isWin) {
+                diceDisp.innerHTML = `<img src="menang sombong.png" alt="Menang" style="width: 120px; height: 120px; object-fit: contain;">`;
+                addLog("CAHAYA! Kamu berhasil bertahan.", "safe");
+            } else {
+                diceDisp.innerHTML = `<img src="kalahmanusia.png" alt="Kalah" style="width: 120px; height: 120px; object-fit: contain;">`;
+                addLog("KEGELAPAN MENELANMU.", "loss");
+            }
+        }
+
+        function resetGame() {
+            mental = 10;
+            day = 1;
+            createTrack();
+            dayDisp.innerText = `${day} / ${maxDays}`;
+            logContainer.innerHTML = '<div class="log-entry">Siklus dimulai kembali...</div>';
+            rollBtn.disabled = false;
+            rollBtn.style.display = "block";
+            resetBtn.style.display = "none";
+            diceDisp.innerText = "🎲";
+        }
+
+        createTrack();
+
+        // Mengambil tombol berdasarkan ID
+const tombol = document.getElementById('btnGame');
+
+// Memberikan perintah klik
+tombol.onclick = function() {
+    window.location.href = 'https://francopudge.github.io/game/';
+};
+    </script>
+</body>
+</html>
